@@ -8,6 +8,6 @@
     EM.@add_con(c, LV.modified_brown_constraint4(x, n))
     EM.@add_con(c, LV.modified_brown_constraint5(x, n))
     EM.@add_con(c, LV.modified_brown_constraint6(x, n))
-    EM.@add_obj(c, LV.modified_brown_objective(x, i) for i = 1:N÷2)
+    EM.@add_obj(c, LV.modified_brown_objective(x, i, T) for i = 1:N÷2)
     return EM.ExaModel(c; prod = prod)
 end
