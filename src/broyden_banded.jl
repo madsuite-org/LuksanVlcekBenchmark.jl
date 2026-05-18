@@ -11,3 +11,6 @@ function broyden_banded_model end
 @inline broyden_banded_ylast(y, x, n) = y[n] - x[n-5] * (1 + x[n-5]) - x[n-4] * (1 + x[n-4]) -
     x[n-3] * (1 + x[n-3]) - x[n-2] * (1 + x[n-2]) - x[n-1] * (1 + x[n-1]) - x[n] * (1 + x[n])
 @inline broyden_banded_objective(x, y, i) = abs((2 + 5 * x[i]^2) * x[i] + 1 + y[i])^7 / 3
+# T-aware overload: avoids Float64 inv(3) in the derivative when T is Float32.
+# Needed for fp32 GPU backends (Metal, oneAPI) that reject double-precision ops in kernels.
+@inline broyden_banded_objective(x, y, i, ::Type{T}) where {T} = abs((2 + 5 * x[i]^2) * x[i] + 1 + y[i])^7 / T(3)
