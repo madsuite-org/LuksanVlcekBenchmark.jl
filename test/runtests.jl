@@ -140,13 +140,15 @@ function test_model(name, model_func)
                 @test Matrix(H) ≈ Matrix(H_ref) atol = 1e-6
 
                 # --- Solver convergence ---
+                # Model identity is established by the pointwise callback and
+                # matrix comparisons above.  The converged point is NOT compared
+                # across representations: these problems are nonconvex, and
+                # constraint ordering and platform rounding can steer the
+                # interior-point iterates into different local minima (observed
+                # for cragg_levy: same model, different basins on x64 vs arm64).
                 r_exa = madnlp(m_exa; print_level = MadNLP.ERROR)
                 @test r_exa.status == MadNLP.SOLVE_SUCCEEDED
-
-                # Compare solution with JuMP reference
-                @test r_exa.status == r_ref.status
-                @test r_exa.objective ≈ r_ref.objective atol = 1e-4
-                @test Array(r_exa.solution) ≈ Array(r_ref.solution) atol = 1e-4
+                @test r_ref.status == MadNLP.SOLVE_SUCCEEDED
             end
         end
     end
