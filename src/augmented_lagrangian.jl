@@ -3,7 +3,9 @@
 
 function augmented_lagrangian_model end
 @inline augmented_lagrangian_start(i) = mod(i, 2) == 1 ? -1.0 : 2.0
-@inline augmented_lagrangian_start(i, ::Type{T}) where {T} = mod(i, 2) == 1 ? T(-1) : T(2)
+# The unit scalar `o` carries the numeric type, so start generators capture
+# an isbits value (GPU kernels reject Type{T} closure captures).
+@inline augmented_lagrangian_start(i, o) = mod(i, 2) == 1 ? -o : 2o
 const augmented_lagrangian_l1 = -0.002008
 const augmented_lagrangian_l2 = -0.001900
 const augmented_lagrangian_l3 = -0.000261

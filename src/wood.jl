@@ -3,7 +3,9 @@
 
 function wood_model end
 @inline wood_start(i) = iseven(i) ? 0.0 : -2.0
-@inline wood_start(i, ::Type{T}) where {T} = iseven(i) ? T(0) : T(-2)
+# The unit scalar `o` carries the numeric type, so start generators capture
+# an isbits value (GPU kernels reject Type{T} closure captures).
+@inline wood_start(i, o) = iseven(i) ? zero(o) : -2o
 @inline wood_constraint(x, k) = (2 + 5 * x[k+5]^2) * x[k+5] + 1
 @inline wood_constraint_aug(x, k) = x[k] * (1 + x[k]) + x[k+1] * (1 + x[k+1])
 @inline wood_objective(x, i) = 100 * (x[2i-1]^2 - x[2i])^2 + (x[2i-1] - 1)^2 +
