@@ -65,7 +65,10 @@ function test_model(name, model_func)
         nnzj   = get_nnzj(m_ref)
         nnzh   = get_nnzh(m_ref)
         x0     = copy(get_x0(m_ref))
-        y0     = zeros(Float64, ncon)
+        # Nonzero multipliers so the Lagrangian Hessian comparison covers the
+        # constraints' second-order terms and jtprod is nontrivial (both are
+        # sums over constraints, hence invariant to constraint order).
+        y0     = ones(Float64, ncon)
 
         # Reference sparse structures
         jac_rows_ref = zeros(Int, nnzj);  jac_cols_ref = zeros(Int, nnzj)
@@ -99,11 +102,11 @@ function test_model(name, model_func)
                 @test get_ncon(m_w) == ncon
 
                 # --- Callback accuracy vs JuMP reference ---
-                @test NLPModels.obj(m_w, x0) ≈ NLPModels.obj(m_ref, x0) atol = 1e-6
-                @test NLPModels.grad(m_w, x0) ≈ NLPModels.grad(m_ref, x0) atol = 1e-6
+                @test NLPModels.obj(m_w, x0) ≈ NLPModels.obj(m_ref, x0) atol = 1e-6 rtol = 1e-8
+                @test NLPModels.grad(m_w, x0) ≈ NLPModels.grad(m_ref, x0) atol = 1e-6 rtol = 1e-8
                 if ncon > 0
-                    @test NLPModels.jtprod(m_w, x0, y0) ≈ NLPModels.jtprod(m_ref, x0, y0) atol = 1e-6
-                    @test NLPModels.hprod(m_w, x0, y0, x0) ≈ NLPModels.hprod(m_ref, x0, y0, x0) atol = 1e-6
+                    @test NLPModels.jtprod(m_w, x0, y0) ≈ NLPModels.jtprod(m_ref, x0, y0) atol = 1e-6 rtol = 1e-8
+                    @test NLPModels.hprod(m_w, x0, y0, x0) ≈ NLPModels.hprod(m_ref, x0, y0, x0) atol = 1e-6 rtol = 1e-8
                 end
 
                 # --- Row-space comparisons: residuals, jprod, Jacobian ---
@@ -124,9 +127,9 @@ function test_model(name, model_func)
                     p = row_permutation(J, resid_w, Jr, resid_ref; atol = 1e-6)
                     @test p !== nothing
                     if p !== nothing
-                        @test resid_w[p] ≈ resid_ref atol = 1e-6
-                        @test NLPModels.jprod(m_w, x0, x0)[p] ≈ NLPModels.jprod(m_ref, x0, x0) atol = 1e-6
-                        @test J[p, :] ≈ Jr atol = 1e-6
+                        @test resid_w[p] ≈ resid_ref atol = 1e-6 rtol = 1e-8
+                        @test NLPModels.jprod(m_w, x0, x0)[p] ≈ NLPModels.jprod(m_ref, x0, x0) atol = 1e-6 rtol = 1e-8
+                        @test J[p, :] ≈ Jr atol = 1e-6 rtol = 1e-8
                     end
                 end
 
@@ -137,7 +140,7 @@ function test_model(name, model_func)
                 hess_vals = zeros(Float64, nnzh_w)
                 hess_coord!(m_w, x0, y0, hess_vals)
                 H = sparse(hess_rows, hess_cols, hess_vals, nvar, nvar)
-                @test Matrix(H) ≈ Matrix(H_ref) atol = 1e-6
+                @test Matrix(H) ≈ Matrix(H_ref) atol = 1e-6 rtol = 1e-8
 
                 # --- Solver convergence ---
                 # Model identity is established by the pointwise callback and
