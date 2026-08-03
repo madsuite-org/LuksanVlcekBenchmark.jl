@@ -10,6 +10,7 @@
     EM.@add_con(c, y[4] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) - LV.broyden_banded_xi(x, 5))
     EM.@add_con(c, y[5] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) - LV.broyden_banded_xi(x, 5) - LV.broyden_banded_xi(x, 6))
     EM.@add_con(c, LV.broyden_banded_yconstraint(y, x, i) for i in 6:N-1)
+    EM.@add_con(c, LV.broyden_banded_ylast(y, x, n))
     EM.@add_obj(c, LV.broyden_banded_objective(x, y, i, T) for i in 1:N)
     return EM.ExaModel(c; prod = prod)
 end
