@@ -28,6 +28,31 @@ function make_exa_model(model_func, N, backend)
     end
 end
 
+# Constraint order is representation-dependent: the native models and the
+# JuMP-converted reference may declare the same constraints in different order.
+# Match rows by their (residual, Jacobian row) signature; returns p such that
+# row p[i] of the tested model corresponds to reference row i, or nothing.
+function row_permutation(Jw, rw, Jref, rref; atol = 1e-8)
+    n = length(rref)
+    used = falses(n)
+    p = zeros(Int, n)
+    for i = 1:n
+        found = 0
+        for j = 1:n
+            used[j] && continue
+            if isapprox(rw[j], rref[i]; atol = atol) &&
+               isapprox(view(Jw, j, :), view(Jref, i, :); atol = atol)
+                found = j
+                break
+            end
+        end
+        found == 0 && return nothing
+        used[found] = true
+        p[i] = found
+    end
+    return p
+end
+
 function test_model(name, model_func)
     @testset "$name" begin
         # Build JuMP model once and convert to ExaModel for callback reference
@@ -77,25 +102,32 @@ function test_model(name, model_func)
                 @test NLPModels.obj(m_w, x0) ≈ NLPModels.obj(m_ref, x0) atol = 1e-6
                 @test NLPModels.grad(m_w, x0) ≈ NLPModels.grad(m_ref, x0) atol = 1e-6
                 if ncon > 0
-                    # Compare bound-relative residuals: JuMP moves constraint
-                    # constants into lcon/ucon, the native models keep them in
-                    # the body, so raw cons values differ by a constant.
-                    @test NLPModels.cons(m_w, x0) .- NLPModels.get_lcon(m_w) ≈
-                          NLPModels.cons(m_ref, x0) .- NLPModels.get_lcon(m_ref) atol = 1e-6
-                    @test NLPModels.jprod(m_w, x0, x0) ≈ NLPModels.jprod(m_ref, x0, x0) atol = 1e-6
                     @test NLPModels.jtprod(m_w, x0, y0) ≈ NLPModels.jtprod(m_ref, x0, y0) atol = 1e-6
                     @test NLPModels.hprod(m_w, x0, y0, x0) ≈ NLPModels.hprod(m_ref, x0, y0, x0) atol = 1e-6
                 end
 
-                # --- Jacobian structure and values ---
+                # --- Row-space comparisons: residuals, jprod, Jacobian ---
+                # Compare bound-relative residuals (JuMP moves constraint
+                # constants into lcon/ucon, the native models keep them in the
+                # body) after matching rows, since constraint order is
+                # representation-dependent.
                 if ncon > 0
                     nnzj_w = get_nnzj(m_w)
                     jac_rows = zeros(Int, nnzj_w); jac_cols = zeros(Int, nnzj_w)
                     jac_structure!(m_w, jac_rows, jac_cols)
                     jac_vals = zeros(Float64, nnzj_w)
                     jac_coord!(m_w, x0, jac_vals)
-                    J = sparse(jac_rows, jac_cols, jac_vals, ncon, nvar)
-                    @test Matrix(J) ≈ Matrix(J_ref) atol = 1e-6
+                    J = Matrix(sparse(jac_rows, jac_cols, jac_vals, ncon, nvar))
+                    Jr = Matrix(J_ref)
+                    resid_w = NLPModels.cons(m_w, x0) .- NLPModels.get_lcon(m_w)
+                    resid_ref = NLPModels.cons(m_ref, x0) .- NLPModels.get_lcon(m_ref)
+                    p = row_permutation(J, resid_w, Jr, resid_ref; atol = 1e-6)
+                    @test p !== nothing
+                    if p !== nothing
+                        @test resid_w[p] ≈ resid_ref atol = 1e-6
+                        @test NLPModels.jprod(m_w, x0, x0)[p] ≈ NLPModels.jprod(m_ref, x0, x0) atol = 1e-6
+                        @test J[p, :] ≈ Jr atol = 1e-6
+                    end
                 end
 
                 # --- Hessian structure and values ---
