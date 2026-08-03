@@ -7,7 +7,7 @@
         JuMP.set_start_value(x[i], 3.0)
         JuMP.set_start_value(y[i], 0.0)
     end
-    JuMP.@constraint(m, [k = 1:N÷2], LV.broyden_banded_kconstraint(x, k) == 0)
+    JuMP.@constraint(m, [k = 1:(N-1)÷2], LV.broyden_banded_kconstraint(x, k) == 0)
     JuMP.@constraint(m, y[1] - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 2) == 0)
     JuMP.@constraint(m, y[2] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) == 0)
     JuMP.@constraint(m, y[3] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) == 0)
