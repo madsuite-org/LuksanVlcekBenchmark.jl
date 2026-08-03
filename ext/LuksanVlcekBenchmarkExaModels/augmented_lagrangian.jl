@@ -4,7 +4,9 @@
     l2 = T(LV.augmented_lagrangian_l2)
     l3 = T(LV.augmented_lagrangian_l3)
     c  = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true))
-    EM.@add_var(c, x, N; start = (LV.augmented_lagrangian_start(i, T(1)) for i = 1:N))
+    # Bind the unit scalar outside the generator (see wood.jl).
+    o = T(1)
+    EM.@add_var(c, x, N; start = (LV.augmented_lagrangian_start(i, o) for i = 1:N))
     EM.@add_con(c, LV.augmented_lagrangian_constraint(x, h, k, T) for k = 1:N-2)
     EM.@add_obj(c, LV.augmented_lagrangian_objective(x, l1, l2, l3, i) for i = 1:N÷5)
     return EM.ExaModel(c; prod = prod)
