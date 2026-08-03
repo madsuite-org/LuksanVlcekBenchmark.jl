@@ -3,7 +3,7 @@
     c = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true))
     EM.@add_var(c, x, N; start = fill(3, N))
     EM.@add_var(c, y, N; start = fill(0, N))
-    EM.@add_con(c, LV.broyden_banded_kconstraint(x, k) for k = 1:N÷2)
+    EM.@add_con(c, LV.broyden_banded_kconstraint(x, k) for k = 1:(N-1)÷2)
     EM.@add_con(c, y[1] - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 2))
     EM.@add_con(c, y[2] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1))
     EM.@add_con(c, y[3] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4))

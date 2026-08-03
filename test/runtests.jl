@@ -65,17 +65,23 @@ function test_model(name, model_func)
                 # WrapperNLPModel copies GPU results to CPU for uniform access
                 m_w = ExaModels.WrapperNLPModel(m_exa)
 
-                # Dimension check
+                # Dimension check.  nnzj/nnzh are deliberately NOT compared:
+                # the partially compressed COO length is representation-dependent,
+                # so the native models and the JuMP-converted reference may carry
+                # different duplicate counts; the assembled matrices are compared
+                # below instead.
                 @test get_nvar(m_w) == nvar
                 @test get_ncon(m_w) == ncon
-                @test get_nnzj(m_w) == nnzj
-                @test get_nnzh(m_w) == nnzh
 
                 # --- Callback accuracy vs JuMP reference ---
                 @test NLPModels.obj(m_w, x0) ≈ NLPModels.obj(m_ref, x0) atol = 1e-6
                 @test NLPModels.grad(m_w, x0) ≈ NLPModels.grad(m_ref, x0) atol = 1e-6
                 if ncon > 0
-                    @test NLPModels.cons(m_w, x0) ≈ NLPModels.cons(m_ref, x0) atol = 1e-6
+                    # Compare bound-relative residuals: JuMP moves constraint
+                    # constants into lcon/ucon, the native models keep them in
+                    # the body, so raw cons values differ by a constant.
+                    @test NLPModels.cons(m_w, x0) .- NLPModels.get_lcon(m_w) ≈
+                          NLPModels.cons(m_ref, x0) .- NLPModels.get_lcon(m_ref) atol = 1e-6
                     @test NLPModels.jprod(m_w, x0, x0) ≈ NLPModels.jprod(m_ref, x0, x0) atol = 1e-6
                     @test NLPModels.jtprod(m_w, x0, y0) ≈ NLPModels.jtprod(m_ref, x0, y0) atol = 1e-6
                     @test NLPModels.hprod(m_w, x0, y0, x0) ≈ NLPModels.hprod(m_ref, x0, y0, x0) atol = 1e-6
@@ -83,18 +89,20 @@ function test_model(name, model_func)
 
                 # --- Jacobian structure and values ---
                 if ncon > 0
-                    jac_rows = zeros(Int, nnzj); jac_cols = zeros(Int, nnzj)
+                    nnzj_w = get_nnzj(m_w)
+                    jac_rows = zeros(Int, nnzj_w); jac_cols = zeros(Int, nnzj_w)
                     jac_structure!(m_w, jac_rows, jac_cols)
-                    jac_vals = zeros(Float64, nnzj)
+                    jac_vals = zeros(Float64, nnzj_w)
                     jac_coord!(m_w, x0, jac_vals)
                     J = sparse(jac_rows, jac_cols, jac_vals, ncon, nvar)
                     @test Matrix(J) ≈ Matrix(J_ref) atol = 1e-6
                 end
 
                 # --- Hessian structure and values ---
-                hess_rows = zeros(Int, nnzh); hess_cols = zeros(Int, nnzh)
+                nnzh_w = get_nnzh(m_w)
+                hess_rows = zeros(Int, nnzh_w); hess_cols = zeros(Int, nnzh_w)
                 hess_structure!(m_w, hess_rows, hess_cols)
-                hess_vals = zeros(Float64, nnzh)
+                hess_vals = zeros(Float64, nnzh_w)
                 hess_coord!(m_w, x0, y0, hess_vals)
                 H = sparse(hess_rows, hess_cols, hess_vals, nvar, nvar)
                 @test Matrix(H) ≈ Matrix(H_ref) atol = 1e-6
