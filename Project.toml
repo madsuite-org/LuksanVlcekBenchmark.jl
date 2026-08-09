@@ -3,6 +3,11 @@ uuid = "dc0393f0-98a3-4386-a65b-465e1307889b"
 version = "1.0.0-DEV"
 authors = ["jerryfung"]
 
+[sources]
+# The core builders need the (unreleased) ExaModels lazy-core branch; drop
+# this pin once it is merged and released.
+ExaModels = {url = "https://github.com/exanauts/ExaModels.jl", rev = "ss/lazy-core"}
+
 [deps]
 ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
 

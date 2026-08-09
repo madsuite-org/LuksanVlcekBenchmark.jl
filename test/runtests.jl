@@ -157,11 +157,80 @@ function test_model(name, model_func)
     end
 end
 
+# ── Lazy-core construction ───────────────────────────────────────────────────
+# Each `*_core()` builds the model once against the ArgTracer size sentinel;
+# `ExaModels.ExaModel(core, n)` materializes it at any size. The builders call
+# the same LV.* expression functions in the same order as the direct ExaModels
+# constructors, so the materialized model must match the direct model
+# numerically (assembled Jacobian/Hessian compared densely, so entry order
+# within the compressed sparsity need not agree).
+function test_core_model(name, core_func, model_func)
+    @testset "core: $name" begin
+        core = core_func()
+        m_core = ExaModels.ExaModel(core, N_TEST)   # bare value binds the direct tracer
+        m_dir = model_func(ExaModelsBackend(), N_TEST)
+
+        nvar = get_nvar(m_dir)
+        ncon = get_ncon(m_dir)
+        @test get_nvar(m_core) == nvar
+        @test get_ncon(m_core) == ncon
+
+        x0 = copy(get_x0(m_dir))
+        @test get_x0(m_core) ≈ x0 atol = 1e-12
+        @test NLPModels.get_lvar(m_core) == NLPModels.get_lvar(m_dir)
+        @test NLPModels.get_uvar(m_core) == NLPModels.get_uvar(m_dir)
+        @test NLPModels.get_lcon(m_core) == NLPModels.get_lcon(m_dir)
+        @test NLPModels.get_ucon(m_core) == NLPModels.get_ucon(m_dir)
+
+        y0 = ones(Float64, ncon)
+        @test NLPModels.obj(m_core, x0) ≈ NLPModels.obj(m_dir, x0) atol = 1e-8 rtol = 1e-10
+        @test NLPModels.grad(m_core, x0) ≈ NLPModels.grad(m_dir, x0) atol = 1e-8 rtol = 1e-10
+        if ncon > 0
+            @test NLPModels.cons(m_core, x0) ≈ NLPModels.cons(m_dir, x0) atol = 1e-8 rtol = 1e-10
+            J_t = jac_dense(m_core, x0, nvar, ncon)
+            J_d = jac_dense(m_dir, x0, nvar, ncon)
+            @test J_t ≈ J_d atol = 1e-8 rtol = 1e-10
+        end
+        H_t = hess_dense(m_core, x0, y0, nvar)
+        H_d = hess_dense(m_dir, x0, y0, nvar)
+        @test H_t ≈ H_d atol = 1e-8 rtol = 1e-10
+
+        r_core = madnlp(m_core; print_level = MadNLP.ERROR)
+        @test r_core.status == MadNLP.SOLVE_SUCCEEDED
+    end
+end
+
+function jac_dense(m, x, nvar, ncon)
+    nnz = get_nnzj(m)
+    rows = zeros(Int, nnz); cols = zeros(Int, nnz); vals = zeros(Float64, nnz)
+    jac_structure!(m, rows, cols)
+    jac_coord!(m, x, vals)
+    return Matrix(sparse(rows, cols, vals, ncon, nvar))
+end
+
+function hess_dense(m, x, y, nvar)
+    nnz = get_nnzh(m)
+    rows = zeros(Int, nnz); cols = zeros(Int, nnz); vals = zeros(Float64, nnz)
+    hess_structure!(m, rows, cols)
+    hess_coord!(m, x, y, vals)
+    return Matrix(sparse(rows, cols, vals, nvar, nvar))
+end
+
 function runtests()
     @testset "LuksanVlcekBenchmark" begin
         for name in LuksanVlcekBenchmark.NAMES
             model_func = getfield(LuksanVlcekBenchmark, name)
             test_model(string(name), model_func)
+        end
+        @testset "lazy-core construction" begin
+            for name in LuksanVlcekBenchmark.CORE_NAMES
+                model_name = Symbol(replace(string(name), r"core$" => "model"))
+                test_core_model(
+                    string(name),
+                    getfield(LuksanVlcekBenchmark, name),
+                    getfield(LuksanVlcekBenchmark, model_name),
+                )
+            end
         end
     end
 end

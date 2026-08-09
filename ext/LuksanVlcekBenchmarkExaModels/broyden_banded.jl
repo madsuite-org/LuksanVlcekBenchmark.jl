@@ -14,3 +14,20 @@
     EM.@add_obj(c, LV.broyden_banded_objective(x, y, i, T) for i in 1:N)
     return EM.ExaModel(c; prod = prod)
 end
+
+function LV.broyden_banded_core()
+    args = EM.ArgTracer()
+    c = EM.ExaCore(concrete = Val(true))
+    EM.@add_var(c, x, args; start = fill(3, args))
+    EM.@add_var(c, y, args; start = fill(0, args))
+    EM.@add_con(c, LV.broyden_banded_kconstraint(x, k) for k = 1:(args-1)÷2)
+    EM.@add_con(c, y[1] - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 2) for _ in 1:1)
+    EM.@add_con(c, y[2] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) for _ in 1:1)
+    EM.@add_con(c, y[3] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) for _ in 1:1)
+    EM.@add_con(c, y[4] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) - LV.broyden_banded_xi(x, 5) for _ in 1:1)
+    EM.@add_con(c, y[5] - LV.broyden_banded_xi(x, 2) - LV.broyden_banded_xi(x, 3) - LV.broyden_banded_xi(x, 1) - LV.broyden_banded_xi(x, 4) - LV.broyden_banded_xi(x, 5) - LV.broyden_banded_xi(x, 6) for _ in 1:1)
+    EM.@add_con(c, LV.broyden_banded_yconstraint(y, x, i) for i in 6:args-1)
+    EM.@add_con(c, LV.broyden_banded_ylast(y, x, n) for n in args:args)
+    EM.@add_obj(c, LV.broyden_banded_objective(x, y, i) for i in 1:args)
+    return c
+end

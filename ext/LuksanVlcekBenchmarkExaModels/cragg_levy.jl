@@ -5,3 +5,12 @@
     EM.@add_obj(c, LV.cragg_levy_objective(x, i) for i = 1:N÷2-1)
     return EM.ExaModel(c; prod = prod)
 end
+
+function LV.cragg_levy_core()
+    args = EM.ArgTracer()
+    c = EM.ExaCore(concrete = Val(true))
+    EM.@add_var(c, x, args; start = (LV.cragg_levy_start(i) for i = 1:args))
+    EM.@add_con(c, LV.cragg_levy_constraint(x, k) for k = 1:args-2)
+    EM.@add_obj(c, LV.cragg_levy_objective(x, i) for i = 1:args÷2-1)
+    return c
+end

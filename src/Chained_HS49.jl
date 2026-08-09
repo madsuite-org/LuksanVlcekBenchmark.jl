@@ -3,6 +3,7 @@
 # The index in nC would be out of range; the last constraint is therefore not implemented.
 
 function Chained_HS49_model end
+function Chained_HS49_core end
 @inline Chained_HS49_start(i) = mod(i, 3) == 1 ? 10.0 : mod(i, 3) == 2 ? 7.0 : -3.0
 @inline Chained_HS49_constraint1(x, l) = x[l+1]^2 + x[l+2] + x[l+3] + 4 * x[l+4] - 7
 @inline Chained_HS49_constraint2(x, l) = x[l+3]^2 - 5 * x[l+5] - 6

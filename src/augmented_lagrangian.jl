@@ -2,6 +2,7 @@
 # Institute of Computer Science, Academy of Sciences of the Czech Republic. Technical report No. 767 Problem 5.8
 
 function augmented_lagrangian_model end
+function augmented_lagrangian_core end
 @inline augmented_lagrangian_start(i) = mod(i, 2) == 1 ? -1.0 : 2.0
 # The unit scalar `o` carries the numeric type, so start generators capture
 # an isbits value (GPU kernels reject Type{T} closure captures).

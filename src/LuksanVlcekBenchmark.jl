@@ -30,6 +30,15 @@ const NAMES = filter(names(LuksanVlcekBenchmark; all = true)) do x
     endswith(str, "model") && !startswith(str, "#")
 end
 
+const CORE_NAMES = filter(names(LuksanVlcekBenchmark; all = true)) do x
+    str = string(x)
+    endswith(str, "core") && !startswith(str, "#")
+end
+
+for name in CORE_NAMES
+    @eval export $name
+end
+
 for name in NAMES
     @eval export $name
 end

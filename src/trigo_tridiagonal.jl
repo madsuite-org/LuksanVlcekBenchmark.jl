@@ -2,6 +2,7 @@
 # Institute of Computer Science, Academy of Sciences of the Czech Republic. Technical report No. 767 Problem 5.7
 
 function trigo_tridiagonal_model end
+function trigo_tridiagonal_core end
 @inline trigo_tridiagonal_constraint1(x) = 4 * (x[1] - x[2]^2) + x[2] - x[3]^2
 @inline trigo_tridiagonal_constraint2(x) = 8 * x[2] * (x[2]^2 - x[1]) - 2 * (1 - x[2]) + 4 * (x[2] - x[3]^2) + x[3] - x[4]^2
 @inline trigo_tridiagonal_constraint3(x, n) = 8 * x[n-1] * (x[n-1]^2 - x[n-2]) - 2 * (1 - x[n-1]) + 4 * (x[n-1] - x[n]^2) + x[n-2] - x[n-3]^2

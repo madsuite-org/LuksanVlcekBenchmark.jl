@@ -3,6 +3,7 @@
 # The index in nC would be out of range; the last term in each constraint is therefore not implemented.
 
 function Chained_HS51_model end
+function Chained_HS51_core end
 @inline Chained_HS51_start(i) = mod(i, 4) == 1 ? 2.5 : mod(i, 4) == 2 ? 0.5 : mod(i, 4) == 3 ? 2.0 : -1.0
 @inline Chained_HS51_constraint1(x, l) = x[l+1]^2 + 3 * x[l+2] - 4
 @inline Chained_HS51_constraint2(x, l) = x[l+3]^2 + 2 * x[l+4] - 2 * x[l+5]

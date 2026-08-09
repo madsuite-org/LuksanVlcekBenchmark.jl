@@ -11,3 +11,17 @@
     EM.@add_obj(c, LV.modified_brown_objective(x, i, T) for i = 1:N÷2)
     return EM.ExaModel(c; prod = prod)
 end
+
+function LV.modified_brown_core()
+    args = EM.ArgTracer()
+    c = EM.ExaCore(concrete = Val(true))
+    EM.@add_var(c, x, args; start = fill(-1, args))
+    EM.@add_con(c, LV.modified_brown_constraint1(x) for _ in 1:1)
+    EM.@add_con(c, LV.modified_brown_constraint2(x) for _ in 1:1)
+    EM.@add_con(c, LV.modified_brown_constraint3(x) for _ in 1:1)
+    EM.@add_con(c, LV.modified_brown_constraint4(x, n) for n in args:args)
+    EM.@add_con(c, LV.modified_brown_constraint5(x, n) for n in args:args)
+    EM.@add_con(c, LV.modified_brown_constraint6(x, n) for n in args:args)
+    EM.@add_obj(c, LV.modified_brown_objective(x, i) for i = 1:args÷2)
+    return c
+end

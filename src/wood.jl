@@ -2,6 +2,7 @@
 # Institute of Computer Science, Academy of Sciences of the Czech Republic. Technical report No. 767 Problem 5.2
 
 function wood_model end
+function wood_core end
 @inline wood_start(i) = iseven(i) ? 0.0 : -2.0
 # The unit scalar `o` carries the numeric type, so start generators capture
 # an isbits value (GPU kernels reject Type{T} closure captures).
