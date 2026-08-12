@@ -1,7 +1,7 @@
 @inline function LV.broyden_tridiagonal_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     EM.@add_var(c, x, N; start = -1)
     EM.@add_con(c, LV.broyden_tridiagonal_constraint(x, k) for k = 1:N-4)
     EM.@add_obj(c, LV.broyden_tridiagonal_objective(x, i, T) for i = 2:N-1)

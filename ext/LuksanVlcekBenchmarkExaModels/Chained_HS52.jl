@@ -1,7 +1,7 @@
 @inline function LV.Chained_HS52_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     EM.@add_var(c, x, N; start = LV.Chained_HS52_start(1))
     EM.@add_con(c, LV.Chained_HS52_constraint1(x, l) for l in EM.ArgNode1(LV.Chained_HS52_l1, N))
     EM.@add_con(c, LV.Chained_HS52_constraint2(x, l) for l in EM.ArgNode1(LV.Chained_HS52_l2, N))

@@ -1,7 +1,7 @@
 @inline function LV.trigo_tridiagonal_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     EM.@add_var(c, x, N; start = 1)
     EM.@add_con(c, LV.trigo_tridiagonal_constraint1(x))
     EM.@add_con(c, LV.trigo_tridiagonal_constraint2(x))

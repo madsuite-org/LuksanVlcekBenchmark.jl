@@ -1,7 +1,7 @@
 @inline function LV.chained_powell_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     EM.@add_var(c, x, N; start = Base.Generator(LV.chained_powell_start, 1:N))
     EM.@add_con(c, LV.chained_powell_constraint1(x))
     # One row, but it indexes the last variable — so the index arrives as data

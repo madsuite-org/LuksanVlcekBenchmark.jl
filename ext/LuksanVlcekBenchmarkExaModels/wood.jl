@@ -1,7 +1,7 @@
 @inline function LV.wood_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     # Bind the unit scalar outside the generator: the closure then captures an
     # isbits value rather than Type{T}, which GPU broadcast kernels reject on
     # some targets.  `Fix2` keeps it a named type, so nothing anonymous reaches

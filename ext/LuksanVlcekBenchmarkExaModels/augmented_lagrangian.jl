@@ -1,7 +1,7 @@
 @inline function LV.augmented_lagrangian_recipe(
     ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
 )
-    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., nargs = Val(1))
     l1 = T(LV.augmented_lagrangian_l1)
     l2 = T(LV.augmented_lagrangian_l2)
     l3 = T(LV.augmented_lagrangian_l3)
