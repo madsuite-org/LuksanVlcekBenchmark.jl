@@ -3,6 +3,14 @@
 # The index in nC would be out of range; the last term in each constraint is therefore not implemented.
 
 function Chained_HS52_model end
+function Chained_HS52_recipe end
+function Chained_HS52_args end
+
+# Constraint index sets — see the note in Chained_HS46.jl.
+@inline Chained_HS52_nC(N) = 3 * (N - 1) ÷ 4
+Chained_HS52_l1(N) = [4 * div(i-1, 3) for i in 1:3:Chained_HS52_nC(N)-3]
+Chained_HS52_l2(N) = [4 * div(i-1, 3) for i in 2:3:Chained_HS52_nC(N)-3]
+Chained_HS52_l3(N) = [4 * div(i-1, 3) for i in 3:3:Chained_HS52_nC(N)-3]
 @inline Chained_HS52_start(i) = 2.0
 @inline Chained_HS52_constraint1(x, l) = x[l+1]^2 + 3 * x[l+2]
 @inline Chained_HS52_constraint2(x, l) = x[l+3]^2 + 2 * x[l+4] - 2 * x[l+5]

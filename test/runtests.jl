@@ -157,11 +157,56 @@ function test_model(name, model_func)
     end
 end
 
+# A recipe is the model's structure with its size left open; `*_args` supplies
+# the values that close it.  Two properties are worth testing that `*_model`
+# alone cannot show, because `*_model` is defined as the two composed:
+#
+#   1. the core really is open — it declares its arity and its variable count is
+#      an expression rather than a number;
+#   2. it is not consumed by being used.  One core has to instantiate at any
+#      size, repeatedly, and the model built from it has to be the same model
+#      the JuMP formulation describes at that size — which is an independent
+#      reference, not the ExaModels path checking itself.
+function test_recipe(name, N_list)
+    @testset "$(name) recipe" begin
+        recipe = getfield(LuksanVlcekBenchmark, Symbol(name, "_recipe"))
+        args = getfield(LuksanVlcekBenchmark, Symbol(name, "_args"))
+        builder = getfield(LuksanVlcekBenchmark, Symbol(name, "_model"))
+
+        core = recipe(ExaModelsBackend())
+        @test core.nargs === Val(1)
+        @test core.nvar isa ExaModels.AbstractArgNode
+
+        first_model = nothing
+        for N in N_list
+            m = ExaModels.ExaModel(core, args(ExaModelsBackend(), N)...)
+            r = ExaModels.ExaModel(builder(JuMPBackend(), N))
+            @test m.meta.nvar == r.meta.nvar
+            @test m.meta.ncon == r.meta.ncon
+            x = copy(r.meta.x0)
+            @test NLPModels.obj(m, x) ≈ NLPModels.obj(r, x) atol = 1e-6 rtol = 1e-8
+            @test NLPModels.grad(m, x) ≈ NLPModels.grad(r, x) atol = 1e-6 rtol = 1e-8
+            N == first(N_list) && (first_model = m)
+        end
+
+        # Used twice at the same size, after being used at another, the core
+        # still yields exactly what it did the first time.
+        again = ExaModels.ExaModel(core, args(ExaModelsBackend(), first(N_list))...)
+        @test again.meta.nvar == first_model.meta.nvar
+        @test again.meta.ncon == first_model.meta.ncon
+        @test again.meta.x0 == first_model.meta.x0
+    end
+end
+
 function runtests()
     @testset "LuksanVlcekBenchmark" begin
+        # NAMES also carries `*_recipe` and `*_args` now; the model entry is the
+        # one that names a problem.
         for name in LuksanVlcekBenchmark.NAMES
+            endswith(string(name), "_model") || continue
             model_func = getfield(LuksanVlcekBenchmark, name)
             test_model(string(name), model_func)
+            test_recipe(chopsuffix(string(name), "_model"), (N_TEST, N_TEST + 37))
         end
     end
 end

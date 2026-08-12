@@ -25,9 +25,13 @@ include("Chained_HS51.jl")
 include("Chained_HS52.jl")
 include("Chained_HS53.jl")
 
+# Every problem's public surface.  `*_model` is the model itself; `*_recipe` is
+# its structure with the size left open and `*_args` the values that close it,
+# for the backends that can separate the two.  A backend that cannot simply does
+# not define the latter, and is exported exactly as it was.
 const NAMES = filter(names(LuksanVlcekBenchmark; all = true)) do x
     str = string(x)
-    endswith(str, "model") && !startswith(str, "#")
+    any(endswith(str, sfx) for sfx in ("model", "recipe", "args")) && !startswith(str, "#")
 end
 
 for name in NAMES

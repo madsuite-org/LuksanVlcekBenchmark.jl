@@ -1,13 +1,20 @@
-@inline function LV.modified_brown_model(::LV.ExaModelsBackend, N = 1000; T = Float64, backend = nothing, prod = false, kwargs...)
-    n = Int(N)
-    c = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true))
-    EM.@add_var(c, x, N; start = fill(-1, N))
+@inline function LV.modified_brown_recipe(
+    ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
+)
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    EM.@add_var(c, x, N; start = -1)
     EM.@add_con(c, LV.modified_brown_constraint1(x))
     EM.@add_con(c, LV.modified_brown_constraint2(x))
     EM.@add_con(c, LV.modified_brown_constraint3(x))
-    EM.@add_con(c, LV.modified_brown_constraint4(x, n))
-    EM.@add_con(c, LV.modified_brown_constraint5(x, n))
-    EM.@add_con(c, LV.modified_brown_constraint6(x, n))
+    # The trailing three rows index from the end (see chained_powell.jl).
+    EM.@add_con(c, LV.modified_brown_constraint4(x, n) for n in N:N)
+    EM.@add_con(c, LV.modified_brown_constraint5(x, n) for n in N:N)
+    EM.@add_con(c, LV.modified_brown_constraint6(x, n) for n in N:N)
     EM.@add_obj(c, LV.modified_brown_objective(x, i, T) for i = 1:N÷2)
-    return EM.ExaModel(c; prod = prod)
+    return c
 end
+
+@inline LV.modified_brown_args(::LV.ExaModelsBackend, N = 1000) = (N,)
+
+@inline LV.modified_brown_model(b::LV.ExaModelsBackend, N = 1000; prod = false, kwargs...) =
+    EM.ExaModel(LV.modified_brown_recipe(b; kwargs...), LV.modified_brown_args(b, N)...; prod = prod)

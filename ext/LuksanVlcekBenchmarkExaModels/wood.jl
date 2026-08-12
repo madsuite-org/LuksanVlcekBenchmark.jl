@@ -1,12 +1,20 @@
-@inline function LV.wood_model(::LV.ExaModelsBackend, N = 1000; T = Float64, backend = nothing, prod = false, kwargs...)
-    c = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true))
+@inline function LV.wood_recipe(
+    ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
+)
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
     # Bind the unit scalar outside the generator: the closure then captures an
     # isbits value rather than Type{T}, which GPU broadcast kernels reject on
-    # some targets.
+    # some targets.  `Fix2` keeps it a named type, so nothing anonymous reaches
+    # the serialized core.
     o = T(1)
-    EM.@add_var(c, x, N; start = (LV.wood_start(i, o) for i = 1:N))
+    EM.@add_var(c, x, N; start = Base.Generator(Base.Fix2(LV.wood_start, o), 1:N))
     con = EM.@add_con(c, LV.wood_constraint(x, k) for k in 1:N-7)
     EM.@add_con!(c, con, k => LV.wood_constraint_aug(x, k) for k in 1:N-7)
     EM.@add_obj(c, LV.wood_objective(x, i, T) for i = 1:N÷2-1)
-    return EM.ExaModel(c; prod = prod)
+    return c
 end
+
+@inline LV.wood_args(::LV.ExaModelsBackend, N = 1000) = (N,)
+
+@inline LV.wood_model(b::LV.ExaModelsBackend, N = 1000; prod = false, kwargs...) =
+    EM.ExaModel(LV.wood_recipe(b; kwargs...), LV.wood_args(b, N)...; prod = prod)

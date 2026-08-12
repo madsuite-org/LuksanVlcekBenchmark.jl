@@ -1,11 +1,15 @@
-@inline function LV.Chained_HS49_model(::LV.ExaModelsBackend, N = 1000; T = Float64, backend = nothing, prod = false, kwargs...)
-    nC    = 2 * (N - 2) ÷ 3
-    It_L1 = [3 * div(i-1, 2) for i in 1:2:nC-1]
-    It_L2 = [3 * div(i-1, 2) for i in 2:2:nC]
-    c = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true))
-    EM.@add_var(c, x, N; start = (LV.Chained_HS49_start(i) for i = 1:N))
-    EM.@add_con(c, LV.Chained_HS49_constraint1(x, l) for l in It_L1)
-    EM.@add_con(c, LV.Chained_HS49_constraint2(x, l) for l in It_L2)
+@inline function LV.Chained_HS49_recipe(
+    ::LV.ExaModelsBackend; T = Float64, backend = nothing, kwargs...,
+)
+    c, N = EM.ExaCore(T; backend = backend, kwargs..., concrete = Val(true), nargs = Val(1))
+    EM.@add_var(c, x, N; start = Base.Generator(LV.Chained_HS49_start, 1:N))
+    EM.@add_con(c, LV.Chained_HS49_constraint1(x, l) for l in EM.ArgNode1(LV.Chained_HS49_l1, N))
+    EM.@add_con(c, LV.Chained_HS49_constraint2(x, l) for l in EM.ArgNode1(LV.Chained_HS49_l2, N))
     EM.@add_obj(c, LV.Chained_HS49_objective(x, i) for i in 1:floor(Int, (N-2)/3))
-    return EM.ExaModel(c; prod = prod)
+    return c
 end
+
+@inline LV.Chained_HS49_args(::LV.ExaModelsBackend, N = 1000) = (N,)
+
+@inline LV.Chained_HS49_model(b::LV.ExaModelsBackend, N = 1000; prod = false, kwargs...) =
+    EM.ExaModel(LV.Chained_HS49_recipe(b; kwargs...), LV.Chained_HS49_args(b, N)...; prod = prod)
