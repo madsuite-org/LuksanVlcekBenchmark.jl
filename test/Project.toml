@@ -1,0 +1,16 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
+NLPModels = "a4795742-8479-5a88-8948-cc11e1c8c1a6"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+# The recipe API (`nargs`, deferred argument nodes) is on ExaModels main and in
+# no tagged release yet; without this pin CI resolves the registry's v0.11.x
+# and every ExaModels-backend test fails on the `nargs` keyword.  Drop the pin
+# once a release carries the API — the compat bound below is the reminder.
+ExaModels = {rev = "main", url = "https://github.com/madsuite-org/ExaModels.jl"}

@@ -183,6 +183,10 @@ function test_recipe(name, N_list)
             r = ExaModels.ExaModel(builder(JuMPBackend(), N))
             @test m.meta.nvar == r.meta.nvar
             @test m.meta.ncon == r.meta.ncon
+            # The starting point itself, not just values evaluated at the
+            # reference's x0 — a mis-ported `*_start` otherwise surfaces only
+            # as a solver converging in a different basin.
+            @test m.meta.x0 ≈ r.meta.x0 atol = 1e-10
             x = copy(r.meta.x0)
             @test NLPModels.obj(m, x) ≈ NLPModels.obj(r, x) atol = 1e-6 rtol = 1e-8
             @test NLPModels.grad(m, x) ≈ NLPModels.grad(r, x) atol = 1e-6 rtol = 1e-8
