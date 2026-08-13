@@ -13,4 +13,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 # no tagged release yet; without this pin CI resolves the registry's v0.11.x
 # and every ExaModels-backend test fails on the `nargs` keyword.  Drop the pin
 # once a release carries the API — the compat bound below is the reminder.
-ExaModels = {rev = "main", url = "https://github.com/madsuite-org/ExaModels.jl"}
+# Pinned to a SHA rather than the moving ref: CI's depot cache can serve a
+# stale clone for , resolving the current API against older
+# internals (seen as  on the runners).  A
+# SHA absent from a stale clone forces a fresh fetch.  ADVANCE the SHA when
+# ExaModels main moves materially; drop the pin at the first tagged release.
+ExaModels = {rev = "30cea2c9395e27586660676d4890758fdbae4186", url = "https://github.com/madsuite-org/ExaModels.jl"}
