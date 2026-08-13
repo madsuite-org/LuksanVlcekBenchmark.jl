@@ -8,11 +8,6 @@ function augmented_lagrangian_args end
 # The unit scalar `o` carries the numeric type, so start generators capture
 # an isbits value (GPU kernels reject Type{T} closure captures).
 @inline augmented_lagrangian_start(i, o) = mod(i, 2) == 1 ? -o : 2o
-# One element per constraint row, carrying both the index and the mesh width.
-# `h` depends on the size, so a recipe cannot hold it as a number; as per-row
-# data it is simply part of the set the generator runs over.  `o` is the unit
-# scalar that carries the numeric type, exactly as in the start generators.
-augmented_lagrangian_rows(N, o) = [(k = k, h = one(o) / (N + 1)) for k = 1:N-2]
 const augmented_lagrangian_l1 = -0.002008
 const augmented_lagrangian_l2 = -0.001900
 const augmented_lagrangian_l3 = -0.000261

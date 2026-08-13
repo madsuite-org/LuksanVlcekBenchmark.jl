@@ -7,15 +7,12 @@
     l3 = T(LV.augmented_lagrangian_l3)
     # Bind the unit scalar outside the generator (see wood.jl).
     o = T(1)
+    h = one(T) / (N + 1)
     EM.@add_var(c, x, N; start = Base.Generator(Base.Fix2(LV.augmented_lagrangian_start, o), 1:N))
-    # `h` depends on the size, so it cannot be a number here.  It is per-row data
-    # rather than structure: the row set carries `(k, h)` and the kernel reads
-    # both off the element, which is the same idiom an ordinary model would use.
-    EM.@add_con(
-        c,
-        LV.augmented_lagrangian_constraint(x, p.h, p.k, T) for
-        p in EM.ArgNode1(Base.Fix2(LV.augmented_lagrangian_rows, o), N)
-    )
+    # `h` depends on the size, so it is not a number here -- but it has a
+    # symbolic form, so it stays in the recipe and resolves when the model is
+    # built.  The constraint reads exactly as it did before.
+    EM.@add_con(c, LV.augmented_lagrangian_constraint(x, h, k, T) for k = 1:N-2)
     EM.@add_obj(c, LV.augmented_lagrangian_objective(x, l1, l2, l3, i) for i = 1:N÷5)
     return c
 end
