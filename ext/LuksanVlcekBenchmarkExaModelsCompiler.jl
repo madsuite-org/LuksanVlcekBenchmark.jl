@@ -23,7 +23,7 @@ _problems() = sort!([
 
 function ExaModelsCompiler.compile_all(
     ::Val{LV};
-    path = "@lvb",
+    path = "@lv",
     sizes = 1000,
     T = Float64,
     only = nothing,
