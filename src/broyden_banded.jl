@@ -3,6 +3,8 @@
 # y variable does not exist in the original problem; it is introduced to represent the summation in the objective.
 
 function broyden_banded_model end
+function broyden_banded_recipe end
+function broyden_banded_args end
 @inline broyden_banded_xi(x, i) = x[i] * (1 + x[i])
 @inline broyden_banded_kconstraint(x, k) = 4 * x[2k] - (x[2k-1] - x[2k+1]) * exp(x[2k-1] - x[2k] - x[2k+1]) - 3
 @inline broyden_banded_yconstraint(y, x, i) = y[i] - x[i-5] * (1 + x[i-5]) - x[i-4] * (1 + x[i-4]) -

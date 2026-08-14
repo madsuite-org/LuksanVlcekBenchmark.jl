@@ -1,5 +1,6 @@
 using Test
 using ExaModels
+using ExaModelsCompiler
 using JuMP
 using NLPModels
 using MadNLP
@@ -157,11 +158,116 @@ function test_model(name, model_func)
     end
 end
 
+# A recipe is the model's structure with its size left open; `*_args` supplies
+# the values that close it.  Two properties are worth testing that `*_model`
+# alone cannot show, because `*_model` is defined as the two composed:
+#
+#   1. the core really is open — it declares its arity and its variable count is
+#      an expression rather than a number;
+#   2. it is not consumed by being used.  One core has to instantiate at any
+#      size, repeatedly, and the model built from it has to be the same model
+#      the JuMP formulation describes at that size — which is an independent
+#      reference, not the ExaModels path checking itself.
+function test_recipe(name, N_list)
+    @testset "$(name) recipe" begin
+        recipe = getfield(LuksanVlcekBenchmark, Symbol(name, "_recipe"))
+        args = getfield(LuksanVlcekBenchmark, Symbol(name, "_args"))
+        builder = getfield(LuksanVlcekBenchmark, Symbol(name, "_model"))
+
+        core = recipe(ExaModelsBackend())
+        @test core.nargs === Val(1)
+        @test core.nvar isa ExaModels.AbstractArgNode
+
+        first_model = nothing
+        for N in N_list
+            m = ExaModels.ExaModel(core, args(ExaModelsBackend(), N)...)
+            r = ExaModels.ExaModel(builder(JuMPBackend(), N))
+            @test m.meta.nvar == r.meta.nvar
+            @test m.meta.ncon == r.meta.ncon
+            # The starting point itself, not just values evaluated at the
+            # reference's x0 — a mis-ported `*_start` otherwise surfaces only
+            # as a solver converging in a different basin.
+            @test m.meta.x0 ≈ r.meta.x0 atol = 1e-10
+            x = copy(r.meta.x0)
+            @test NLPModels.obj(m, x) ≈ NLPModels.obj(r, x) atol = 1e-6 rtol = 1e-8
+            @test NLPModels.grad(m, x) ≈ NLPModels.grad(r, x) atol = 1e-6 rtol = 1e-8
+            N == first(N_list) && (first_model = m)
+        end
+
+        # Used twice at the same size, after being used at another, the core
+        # still yields exactly what it did the first time.
+        again = ExaModels.ExaModel(core, args(ExaModelsBackend(), first(N_list))...)
+        @test again.meta.nvar == first_model.meta.nvar
+        @test again.meta.ncon == first_model.meta.ncon
+        @test again.meta.x0 == first_model.meta.x0
+    end
+end
+
 function runtests()
     @testset "LuksanVlcekBenchmark" begin
+        # NAMES also carries `*_recipe` and `*_args` now; the model entry is the
+        # one that names a problem.
         for name in LuksanVlcekBenchmark.NAMES
+            endswith(string(name), "_model") || continue
             model_func = getfield(LuksanVlcekBenchmark, name)
             test_model(string(name), model_func)
+            test_recipe(chopsuffix(string(name), "_model"), (N_TEST, N_TEST + 37))
+        end
+        test_compile_all()
+    end
+end
+
+
+# `compile_all` is the provider's whole AOT surface: the list of problems it
+# offers, the arguments each is closed with, and the selection contract.  Most
+# of that is testable without invoking a compiler, because `select` validates
+# names before `compile_library` is ever reached — so the error paths below are
+# real coverage of `compile_all` itself, not of a stand-in.  The compile is
+# tested too, on a single model, because a list that assembles is not evidence
+# that anything in it compiles.
+function test_compile_all()
+    @testset "compile_all" begin
+        # The derived list must cover the package.  `compile_all` builds its
+        # models from the `*_recipe` names rather than a hand-written list
+        # precisely so this cannot drift; the test is what makes that a fact
+        # rather than an intention.
+        recipes = [Symbol(chopsuffix(string(n), "_recipe")) for n in LuksanVlcekBenchmark.NAMES
+                   if endswith(string(n), "_recipe")]
+        models = [Symbol(chopsuffix(string(n), "_model")) for n in LuksanVlcekBenchmark.NAMES
+                  if endswith(string(n), "_model")]
+        @test !isempty(recipes)
+        @test sort(recipes) == sort(models)
+
+        # Every pair `compile_all` would hand the compiler has to close into a
+        # model.  This is the part that breaks when a recipe and its `*_args`
+        # disagree, and it costs no compilation to find out.
+        b = ExaModelsBackend()
+        for name in recipes
+            recipe = getfield(LuksanVlcekBenchmark, Symbol(name, :_recipe))
+            args = getfield(LuksanVlcekBenchmark, Symbol(name, :_args))
+            m = ExaModels.ExaModel(recipe(b; T = Float64), args(b, 50)...)
+            @test m.meta.nvar > 0
+        end
+
+        # Selection contract.  An unknown name must be refused rather than
+        # silently producing a library missing the model the caller asked for —
+        # and it is refused before any compilation, which is why this is cheap.
+        @test_throws ArgumentError ExaModelsCompiler.compile_all(
+            LuksanVlcekBenchmark; only = [:no_such_problem])
+        @test_throws ArgumentError ExaModelsCompiler.compile_all(
+            LuksanVlcekBenchmark; exclude = recipes)   # excluding everything selects nothing
+        # A package with no method must say so, not fail obscurely downstream.
+        @test_throws ArgumentError ExaModelsCompiler.compile_all(Base)
+
+        # One real compile.  A single model keeps this bounded while still
+        # exercising the whole path: recipe -> library -> load -> callbacks.
+        # The read-back is at a size the library was never compiled for, since
+        # a model that only answers at its compile-time size is not a recipe.
+        mktempdir() do dir
+            r = ExaModelsCompiler.compile_all(LuksanVlcekBenchmark;
+                                              path = joinpath(dir, "lvbtest"),
+                                              sizes = 50, only = [:rosenrock])
+            @test isfile(r.libpath)
         end
     end
 end

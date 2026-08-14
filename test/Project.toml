@@ -1,0 +1,29 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
+ExaModelsCompiler = "3d1e9a26-5b74-4f0c-9a2b-7c8f4e11d3a7"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
+NLPModels = "a4795742-8479-5a88-8948-cc11e1c8c1a6"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+# The recipe API (`nargs`, deferred argument nodes, compile_all) is on ExaModels
+# main and in no tagged release yet; without this pin CI resolves the registry's
+# v0.11.x and every ExaModels-backend test fails on the `nargs` keyword.
+#
+# Pinned to a SHA rather than `rev = "main"` deliberately.  A branch name is not
+# reproducible under julia-actions/cache: the job restores ~/.julia from an
+# earlier run and reuses that clone without re-fetching, so `main` resolves to
+# whatever commit the cache happens to hold.  That is how run 31789266458 built
+# against a main from before `nargs` existed -- while reporting the pin as
+# honoured, since the source URL and rev in the resolved status were both right.
+# A SHA either is in the cached clone, in which case it is the code we asked
+# for, or it is not and Pkg must fetch it.
+#
+# BUMP when a needed change lands on ExaModels main; DROP for a version bound at
+# the first release carrying the API.
+ExaModels = {rev = "a9fbf9ccb5afcfb973bc09ed10d7e6b5f24e07a3", url = "https://github.com/madsuite-org/ExaModels.jl"}
+ExaModelsCompiler = {rev = "a9fbf9ccb5afcfb973bc09ed10d7e6b5f24e07a3", url = "https://github.com/madsuite-org/ExaModels.jl", subdir = "ExaModelsCompiler"}
