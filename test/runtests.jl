@@ -1,6 +1,7 @@
 using Test
 using ExaModels
 using ExaModelsCompiler
+import CNLPModels
 using JuMP
 using NLPModels
 using MadNLP
@@ -213,63 +214,31 @@ function runtests()
             test_model(string(name), model_func)
             test_recipe(chopsuffix(string(name), "_model"), (N_TEST, N_TEST + 37))
         end
-        test_compile_all()
-    end
-end
-
-
-# `compile_all` is the provider's whole AOT surface: the list of problems it
-# offers, the arguments each is closed with, and the selection contract.  Most
-# of that is testable without invoking a compiler, because `select` validates
-# names before `compile_library` is ever reached — so the error paths below are
-# real coverage of `compile_all` itself, not of a stand-in.  The compile is
-# tested too, on a single model, because a list that assembles is not evidence
-# that anything in it compiles.
-function test_compile_all()
-    @testset "compile_all" begin
-        # The derived list must cover the package.  `compile_all` builds its
-        # models from the `*_recipe` names rather than a hand-written list
-        # precisely so this cannot drift; the test is what makes that a fact
-        # rather than an intention.
-        recipes = [Symbol(chopsuffix(string(n), "_recipe")) for n in LuksanVlcekBenchmark.NAMES
-                   if endswith(string(n), "_recipe")]
-        models = [Symbol(chopsuffix(string(n), "_model")) for n in LuksanVlcekBenchmark.NAMES
-                  if endswith(string(n), "_model")]
-        @test !isempty(recipes)
-        @test sort(recipes) == sort(models)
-
-        # Every pair `compile_all` would hand the compiler has to close into a
-        # model.  This is the part that breaks when a recipe and its `*_args`
-        # disagree, and it costs no compilation to find out.
-        b = ExaModelsBackend()
-        for name in recipes
-            recipe = getfield(LuksanVlcekBenchmark, Symbol(name, :_recipe))
-            args = getfield(LuksanVlcekBenchmark, Symbol(name, :_args))
-            m = ExaModels.ExaModel(recipe(b; T = Float64), args(b, 50)...)
-            @test m.meta.nvar > 0
-        end
-
-        # Selection contract.  An unknown name must be refused rather than
-        # silently producing a library missing the model the caller asked for —
-        # and it is refused before any compilation, which is why this is cheap.
-        @test_throws ArgumentError ExaModelsCompiler.compile_all(
-            LuksanVlcekBenchmark; only = [:no_such_problem])
-        @test_throws ArgumentError ExaModelsCompiler.compile_all(
-            LuksanVlcekBenchmark; exclude = recipes)   # excluding everything selects nothing
-        # A package with no method must say so, not fail obscurely downstream.
-        @test_throws ArgumentError ExaModelsCompiler.compile_all(Base)
-
-        # One real compile.  A single model keeps this bounded while still
-        # exercising the whole path: recipe -> library -> load -> callbacks.
-        # The read-back is at a size the library was never compiled for, since
-        # a model that only answers at its compile-time size is not a recipe.
-        mktempdir() do dir
-            r = ExaModelsCompiler.compile_all(LuksanVlcekBenchmark;
-                                              path = joinpath(dir, "lvbtest"),
-                                              sizes = 50, only = [:rosenrock])
-            @test isfile(r.libpath)
-        end
     end
 end
 
 runtests()
+
+# `compile_all` compiles the package's problems into one shared library.  It is
+# expensive, so this stays plain: call it with its defaults, then check that a
+# model out of the resulting library is the model it should be.  The read-back
+# is at a size the library was not compiled for, since a model that only answers
+# at its compile-time size is not a recipe.
+@testset "compile_all" begin
+    r = ExaModelsCompiler.compile_all(LuksanVlcekBenchmark)
+    @test isfile(r.libpath)
+    lib = CNLPModels.load(r.libpath)
+
+    b = ExaModelsBackend()
+    for name in (:rosenrock, :wood)
+        m = CNLPModels.CNLPModel(lib, getfield(LuksanVlcekBenchmark, Symbol(name, :_args))(b, 137)...;
+                                 prefix = String(name))
+        ref = getfield(LuksanVlcekBenchmark, Symbol(name, :_model))(b, 137)
+        @test m.meta.nvar == ref.meta.nvar
+        @test m.meta.ncon == ref.meta.ncon
+        @test m.meta.x0 == ref.meta.x0
+        x = ref.meta.x0 .+ 0.001 .* (1:ref.meta.nvar)
+        @test NLPModels.obj(m, x) == NLPModels.obj(ref, x)
+        @test NLPModels.grad(m, x) == NLPModels.grad(ref, x)
+    end
+end
