@@ -10,12 +10,10 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
 # The recipe API (`nargs`, deferred argument nodes) is on ExaModels main and in
-# no tagged release yet; without this pin CI resolves the registry's v0.11.x
-# and every ExaModels-backend test fails on the `nargs` keyword.  Drop the pin
-# once a release carries the API — the compat bound below is the reminder.
-# Pinned to a SHA rather than the moving ref: CI's depot cache can serve a
-# stale clone for rev = "main", resolving the current public API against older
-# internals (seen as MethodError on _exa_core(..., nargs) on the runners).  A
-# SHA absent from a stale clone forces a fresh fetch.  ADVANCE the SHA when
-# ExaModels main moves materially; drop the pin at the first tagged release.
-ExaModels = {rev = "30cea2c9395e27586660676d4890758fdbae4186", url = "https://github.com/madsuite-org/ExaModels.jl"}
+# no tagged release yet; without this pin CI resolves the registry's v0.11.x and
+# every ExaModels-backend test fails on the `nargs` keyword.  The package's
+# Project.toml deliberately carries NO [extras]/[targets]: with those present
+# Pkg builds the legacy target environment and never reads this file, which is
+# how the pin was silently ignored for a day.  REPOINT to a release when one
+# carries the API.
+ExaModels = {rev = "main", url = "https://github.com/madsuite-org/ExaModels.jl"}
