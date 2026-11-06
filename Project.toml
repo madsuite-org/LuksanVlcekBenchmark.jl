@@ -27,12 +27,8 @@ LuksanVlcekBenchmarkMetal = ["Metal", "ExaModels", "KernelAbstractions"]
 LuksanVlcekBenchmarkoneAPI = ["oneAPI", "ExaModels", "KernelAbstractions"]
 
 [compat]
-# ExaModels and ExaModelsCompiler are deliberately absent: the recipe API this
-# package is built on is on ExaModels main and in no registered version (the
-# registry's newest is v0.11.2, which has no `nargs`), and ExaModelsCompiler is
-# not registered at all.  A bound written now would name versions that do not
-# exist.  Add both when they are released; until then this package is not
-# registrable, and test/Project.toml carries the git pin CI resolves.
+ExaModels = "0.14"
+ExaModelsCompiler = "0.2"
 AMDGPU = "2"
 CUDA = "6"
 JuMP = "^1.19"
