@@ -1,5 +1,7 @@
 module LuksanVlcekBenchmark
 
+using Preferences: @load_preference, @set_preferences!
+
 const LV = LuksanVlcekBenchmark
 
 abstract type AbstractModelerBackend end
@@ -24,6 +26,7 @@ include("Chained_HS50.jl")
 include("Chained_HS51.jl")
 include("Chained_HS52.jl")
 include("Chained_HS53.jl")
+include("precompile.jl")
 
 # Every problem's public surface.  `*_model` is the model itself; `*_recipe` is
 # its structure with the size left open and `*_args` the values that close it,
@@ -38,6 +41,6 @@ for name in NAMES
     @eval export $name
 end
 
-export LV
+export LV, set_precompile
 
 end # module LuksanVlcekBenchmark

@@ -6,6 +6,8 @@ using JuMP
 using NLPModels
 using MadNLP
 using KernelAbstractions
+using Logging: Warn
+using Preferences: load_preference
 using SparseArrays
 using LuksanVlcekBenchmark
 using CUDA
@@ -218,6 +220,29 @@ function runtests()
 end
 
 runtests()
+
+@testset "precompile preference" begin
+    LVB = LuksanVlcekBenchmark
+    @test LVB.PRECOMPILE === load_preference(LVB, "precompile", false)
+
+    project_prefs = joinpath(dirname(Base.active_project()), "LocalPreferences.toml")
+    before = isfile(project_prefs) ? read(project_prefs) : nothing
+    try
+        @test set_precompile(true) === true
+        @test load_preference(LVB, "precompile") === true
+        @test set_precompile(false) === false
+        @test load_preference(LVB, "precompile") === false
+    finally
+        before === nothing ? rm(project_prefs; force = true) : write(project_prefs, before)
+    end
+
+    # A problem that throws is skipped with a warning, so running clean means
+    # no warning at all.
+    @test_logs min_level = Warn LVB._precompile_workload(nothing)
+    @test_logs min_level = Warn LVB._precompile_workload(nothing; T = Float32)
+    @test_logs min_level = Warn LVB._precompile_workload(CPU())
+    @test_logs (:warn, r"skipping") match_mode = :any LVB._precompile_workload(nothing; T = String)
+end
 
 # `compile_all` compiles the package's problems into one shared library.  It is
 # expensive, so this stays plain: call it with its defaults, then check that a

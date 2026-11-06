@@ -2,6 +2,7 @@ module LuksanVlcekBenchmarkExaModels
 
 import ExaModels
 import LuksanVlcekBenchmark
+import PrecompileTools
 const LV = LuksanVlcekBenchmark
 const EM = ExaModels
 
@@ -34,5 +35,6 @@ include("Chained_HS50.jl")
 include("Chained_HS51.jl")
 include("Chained_HS52.jl")
 include("Chained_HS53.jl")
+include("precompile.jl")
 
 end
