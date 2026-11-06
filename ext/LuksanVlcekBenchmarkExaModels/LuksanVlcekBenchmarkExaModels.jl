@@ -6,6 +6,15 @@ import PrecompileTools
 const LV = LuksanVlcekBenchmark
 const EM = ExaModels
 
+# `1:arg.N` on a recipe argument. ExaModels leaves these out of `Base.:(:)` because
+# extending it invalidates compiled code, so this module keeps its own `:`.
+@inline (:)(a...) = Base.:(:)(a...)
+@inline (:)(a::EM.AbstractArgNode, b::EM.AbstractArgNode) = EM.ArgNode2(Colon(), a, b)
+@inline (:)(a::EM.AbstractArgNode, b::Number) = EM.ArgNode2(Colon(), a, b)
+@inline (:)(a::Number, b::EM.AbstractArgNode) = EM.ArgNode2(Colon(), a, b)
+@inline floor(a...) = Base.floor(a...)
+@inline floor(::Type{T}, a::EM.AbstractArgNode) where {T} = EM.ArgNode1(Base.Fix1(Base.floor, T), a)
+
 # ── Deferred callables in recipes ─────────────────────────────────────────────
 #
 # Every function a recipe defers — start generators, index-set builders, data
