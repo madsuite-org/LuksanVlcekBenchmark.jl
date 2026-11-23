@@ -16,7 +16,5 @@ jobs:
     uses: madsuite-org/cnlplib/.github/workflows/library.yml@main
     with:
       name: lv
-      # until ExaModelsCompiler 0.4 (cnlp ABI 0.2) is registered
-      examodelscompiler-rev: compiler-cnlp-0.2
     permissions:
       contents: write
