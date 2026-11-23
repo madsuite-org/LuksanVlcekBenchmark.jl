@@ -23,3 +23,26 @@ The CPU code is compiled when ExaModels is loaded. A GPU backend (CUDA, AMDGPU,
 oneAPI, or Metal in `Float32`) has its own workload, which runs when that package
 is loaded and a device works at precompile time, on Julia 1.12 or newer. oneAPI's
 never does, because oneAPI.jl reports no working device during precompilation.
+
+## Compiled library
+
+Every problem is also published as one compiled shared library implementing the
+[cnlp ABI](https://github.com/madsuite-org/cnlp-abi), with CPU and CUDA evaluation and
+no Julia needed to use it. Each push to `main` updates the `nightly` release, and each
+registered version gets its own release:
+
+```sh
+cnlplib install lv            # the latest version (https://cnlplib.madsuite.org)
+cnlplib install lv@nightly    # the latest build of main
+```
+
+From Julia, through [CNLPModels.jl](https://github.com/madsuite-org/CNLPModels.jl):
+
+```julia
+using CNLPModels, MadNLP
+madnlp(CNLPModel("@lv", :wood, 100_000))
+```
+
+To build it yourself, with ExaModelsCompiler loaded:
+`compile_all(LuksanVlcekBenchmark; path = "lv", bundle = true)` (add `device = :cuda` for
+the CUDA tier).
