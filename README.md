@@ -27,19 +27,19 @@ never does, because oneAPI.jl reports no working device during precompilation.
 ## Compiled library
 
 Every problem is also published as one compiled shared library implementing the
-[cnlp ABI](https://github.com/madsuite-org/cnlp-abi), with CPU and CUDA evaluation and
+[cnlp ABI](https://cnlplib.madsuite.org), with CPU and CUDA evaluation and
 no Julia needed to use it. Each push to `main` updates the `nightly` release, and each
 registered version gets its own release:
 
 ```sh
-cnlplib install lv            # the latest version (https://cnlplib.madsuite.org)
-cnlplib install lv@nightly    # the latest build of main
+cnlp install lv            # the latest version (https://cnlplib.madsuite.org)
+cnlp install lv@nightly    # the latest build of main
 ```
 
-From Julia, through [CNLPModels.jl](https://github.com/madsuite-org/CNLPModels.jl):
+From Julia, through [CNLPLib.jl](https://github.com/madsuite-org/CNLPLib.jl):
 
 ```julia
-using CNLPModels, MadNLP
+using CNLPLib, MadNLP
 madnlp(CNLPModel("@lv", :wood, 100_000))
 ```
 
